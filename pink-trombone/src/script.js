@@ -300,7 +300,7 @@ const { send } = setupConnection("pink-trombone", (message) => {
               exponentialRampToValueAtTime(backConstriction.diameter, backConstriction.diameter.maxValue);
             }
             nodes.forEach(({ node, value }) => {
-              // fa'asa'o le taimi
+              // FIX timing
               exponentialRampToValueAtTime(node, value, 0.04 + index * 0.1);
             });
           });
@@ -321,7 +321,7 @@ const { send } = setupConnection("pink-trombone", (message) => {
         }
         break;
       default:
-      //console.log("ki e le'i maua", key);
+      //console.log("uncaught key", key);
     }
 
     if (node) {
@@ -359,7 +359,7 @@ function exponentialRampToValueAtTime(node, value, offset = 0.01) {
   if (value == 0) {
     value = 0.0001;
   }
-  //node.cancelAndHoldAtTime(pinkTromboneElement.audioContext.currentTime); // fa'amalū
+  //node.cancelAndHoldAtTime(pinkTromboneElement.audioContext.currentTime);
   node.exponentialRampToValueAtTime(value, pinkTromboneElement.audioContext.currentTime + offset);
 }
 
@@ -405,3 +405,125 @@ function playKeyframes(keyframes) {
   });
 }
 
+const darkModeButton = document.getElementById("darkMode");
+let isDarkMode = false;
+const toggleDarkMode = () => {
+  isDarkMode = !isDarkMode;
+  if (isDarkMode) {
+    pinkTromboneElement.UI._container.style.gridTemplateRows = "auto 200px";
+    pinkTromboneElement.UI._container.style.gridTemplateColumns = "auto";
+    pinkTromboneElement.UI._buttonsUI._container.style.display = "none";
+    pinkTromboneElement.UI._glottisUI._container.style.display = "none";
+    document.body.style.margin = "0px";
+    document.body.style.filter = "grayscale(1)";
+  } else {
+    pinkTromboneElement.UI._container.style.gridTemplateRows = "auto 200px 100px";
+    pinkTromboneElement.UI._container.style.gridTemplateColumns = "auto 100px";
+    pinkTromboneElement.UI._buttonsUI._container.style.display = "flex";
+    pinkTromboneElement.UI._glottisUI._container.style.display = "";
+    document.body.style.margin = "";
+    document.body.style.filter = "";
+  }
+};
+const debouncedToggleDarkMode = debounce(() => toggleDarkMode(), 10);
+darkModeButton.addEventListener("click", () => {
+  debouncedToggleDarkMode();
+});
+
+/** @type {MediaStream|undefined} */
+var mediaStream;
+/** @type {MediaStreamAudioSourceNode|undefined} */
+var mediaStreamSourceNode;
+const toggleMicrophoneButton = document.getElementById("toggleMicrophone");
+toggleMicrophoneButton.addEventListener("click", async () => {
+  if (isMicrophoneOn()) {
+    stopMicrophone();
+  } else {
+    await getMicrophone();
+  }
+});
+
+const isMicrophoneOn = () => {
+  return Boolean(mediaStream);
+};
+
+const getMicrophone = async () => {
+  stopMicrophone();
+
+  mediaStream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      deviceId: microphoneSelect.value ? microphoneSelect.value : true,
+      autoGainControl: false,
+      noiseSuppression: false,
+      echoCancellation: false,
+    },
+  });
+  if (!didCheckMicrophonesOnce) {
+    updateMicrophoneSelect();
+  }
+  mediaStreamSourceNode = audioContext.createMediaStreamSource(mediaStream);
+  mediaStreamSourceNode.connect(pinkTromboneElement.pinkTrombone._pinkTromboneNode);
+  pinkTromboneElement.pinkTrombone._fricativeFilter.disconnect();
+  pinkTromboneElement.pinkTrombone._aspirateFilter.disconnect();
+
+  debugMicrophoneButton.removeAttribute("hidden");
+  toggleMicrophoneButton.innerText = "disable microphone";
+};
+const stopMicrophone = () => {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach((track) => track.stop());
+    mediaStream = undefined;
+    mediaStreamSourceNode?.disconnect();
+    mediaStreamSourceNode = undefined;
+    isListeningToMicrophone = false;
+    debugMicrophoneButton.setAttribute("hidden", "");
+    toggleMicrophoneButton.innerText = "enable microphone";
+
+    pinkTromboneElement.pinkTrombone._fricativeFilter.connect(pinkTromboneElement.pinkTrombone._pinkTromboneNode.noise);
+    pinkTromboneElement.pinkTrombone._aspirateFilter.connect(pinkTromboneElement.pinkTrombone._pinkTromboneNode.noise);
+  }
+};
+
+/** @type {HTMLSelectElement} */
+const microphoneSelect = document.getElementById("microphoneSelect");
+/** @type {HTMLOptGroupElement} */
+const microphoneOptGroup = document.getElementById("microphoneOptGroup");
+const updateMicrophoneSelect = async () => {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const microphones = devices.filter((device) => device.kind == "audioinput");
+  if (microphones.length > 0) {
+    microphoneSelect.removeAttribute("hidden");
+    microphoneOptGroup.innerHTML = "";
+    microphones.forEach((microphone) => {
+      microphoneOptGroup.appendChild(new Option(microphone.label, microphone.deviceId));
+    });
+    didCheckMicrophonesOnce = true;
+  } else {
+    microphoneSelect.setAttribute("hidden", "");
+  }
+};
+navigator.mediaDevices.addEventListener("devicechange", () => {
+  updateMicrophoneSelect();
+});
+updateMicrophoneSelect();
+
+microphoneSelect.addEventListener("input", async () => {
+  if (isMicrophoneOn()) {
+    await getMicrophone();
+  }
+});
+
+var isListeningToMicrophone = false;
+const debugMicrophoneButton = document.getElementById("debugMicrophone");
+debugMicrophoneButton.addEventListener("click", () => {
+  if (mediaStreamSourceNode) {
+    isListeningToMicrophone = !isListeningToMicrophone;
+    if (isListeningToMicrophone) {
+      mediaStreamSourceNode.connect(audioContext.destination);
+      debugMicrophoneButton.innerText = "stop listening to microphone";
+    } else {
+      mediaStreamSourceNode.disconnect(audioContext.destination);
+      debugMicrophoneButton.innerText = "listen to microphone";
+    }
+  }
+});
