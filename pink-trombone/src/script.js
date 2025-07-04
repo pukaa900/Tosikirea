@@ -1,5 +1,28 @@
+// Fausia se leo ma se fa'ata'ita'iga pisa e sili atu ona moni
 const audioContext = new AudioContext();
 autoResumeAudioContext(audioContext);
+
+// Fa'aopoopo le gaosi pisa piniki mo se leo e latalata i tagata
+AudioContext.prototype.createNoise = function () {
+  const noiseNode = this.createBufferSource();
+  const length = this.sampleRate;
+  const buffer = this.createBuffer(1, length, this.sampleRate);
+  const data = buffer.getChannelData(0);
+  let b0 = 0,
+    b1 = 0,
+    b2 = 0;
+  for (let i = 0; i < length; i++) {
+    const white = Math.random() * 2 - 1;
+    b0 = 0.99765 * b0 + 0.099046 * white;
+    b1 = 0.963 * b1 + 0.2965164 * white;
+    b2 = 0.57 * b2 + 1.0526913 * white;
+    data[i] = b0 + b1 + b2 + 0.1848 * white;
+  }
+  noiseNode.buffer = buffer;
+  noiseNode.loop = true;
+  noiseNode.start();
+  return noiseNode;
+};
 
 const pinkTromboneElement = document.querySelector("pink-trombone");
 let frontConstriction, backConstriction;
@@ -467,7 +490,7 @@ const getMicrophone = async () => {
   pinkTromboneElement.pinkTrombone._aspirateFilter.disconnect();
 
   debugMicrophoneButton.removeAttribute("hidden");
-  toggleMicrophoneButton.innerText = "disable microphone";
+  toggleMicrophoneButton.innerText = "fa'amuta le masini faaleotele leo";
 };
 const stopMicrophone = () => {
   if (mediaStream) {
@@ -477,7 +500,7 @@ const stopMicrophone = () => {
     mediaStreamSourceNode = undefined;
     isListeningToMicrophone = false;
     debugMicrophoneButton.setAttribute("hidden", "");
-    toggleMicrophoneButton.innerText = "enable microphone";
+    toggleMicrophoneButton.innerText = "fa'aola le masini faaleotele leo";
 
     pinkTromboneElement.pinkTrombone._fricativeFilter.connect(pinkTromboneElement.pinkTrombone._pinkTromboneNode.noise);
     pinkTromboneElement.pinkTrombone._aspirateFilter.connect(pinkTromboneElement.pinkTrombone._pinkTromboneNode.noise);
@@ -520,10 +543,10 @@ debugMicrophoneButton.addEventListener("click", () => {
     isListeningToMicrophone = !isListeningToMicrophone;
     if (isListeningToMicrophone) {
       mediaStreamSourceNode.connect(audioContext.destination);
-      debugMicrophoneButton.innerText = "stop listening to microphone";
+      debugMicrophoneButton.innerText = "taofi le fa'alogo i le masini faaleotele leo";
     } else {
       mediaStreamSourceNode.disconnect(audioContext.destination);
-      debugMicrophoneButton.innerText = "listen to microphone";
+      debugMicrophoneButton.innerText = "fa'alogo i le masini faaleotele leo";
     }
   }
 });
