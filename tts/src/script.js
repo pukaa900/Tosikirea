@@ -1,10 +1,6 @@
 const { send } = setupConnection("tts", (message) => {
-  const { text, phonemes } = message;
-  if (text) {
-    textInput.value = text;
-    textInput.dispatchEvent(new Event("input"));
-    playButton.click();
-  } else if (phonemes) {
+  const { phonemes } = message;
+  if (phonemes) {
     phonemesInput.value = phonemes;
     phonemesInput.dispatchEvent(new Event("input"));
     playButton.click();
@@ -101,81 +97,18 @@ const renderKeyframes = (
       Object.assign(keyframe, deconstructVoiceness(0.7));
     });
   }
-  if (phonemeSubstitutionType == "misc.slurring") {
-    keyframes.forEach((keyframe) => {
-      Object.assign(keyframe, deconstructVoiceness(0.8));
-    });
-  }
   return keyframes;
 };
 
-const validTextSpan = document.getElementById("validText");
 const validPhonemesSpan = document.getElementById("validPhonemes");
-const textInput = document.getElementById("text");
 const results = [];
 let finalString = "";
-const validTextStrings = [];
-textInput.addEventListener("input", (event) => {
-  const strings = event.target.value.toLowerCase().split(" ");
-  results.length = 0;
-
-  validPhonemesSpan.innerHTML = "";
-
-  validTextStrings.length = 0;
-  strings.forEach((string) => {
-    if (string.length > 0) {
-      const ipas = TextToIPA._IPADict[string];
-      if (ipas) {
-        validTextStrings.push(string);
-        results.push(ipas.slice());
-        //console.log("ipas", ipas);
-      }
-    }
-  });
-
-  if (results.length > 0 && validTextStrings.length > 0) {
-    finalString = validTextStrings.join(" ");
-    validTextSpan.innerText = finalString;
-  } else {
-    validTextSpan.innerText = "";
-  }
-
-  onResultsUpdate();
-});
-
 let isResultFromPhoneme = false;
 const onResultsUpdate = (fromPhonemes = false) => {
   isResultFromPhoneme = fromPhonemes;
-  if (fromPhonemes) {
-    textInput.value = "";
-  } else {
+  if (!fromPhonemes) {
     phonemesInput.value = "";
   }
-
-  if (isUsingPigLatin) {
-    results.forEach((alternatives) => {
-      alternatives.forEach((alternative, alternativeIndex) => {
-        let vowelIndex = -1;
-        alternative.split("").some((phoneme, index) => {
-          if (index != 0 && phonemes[phoneme]?.type == "vowel") {
-            vowelIndex = index;
-            return true;
-          }
-        });
-        if (vowelIndex > -1) {
-          const alternativeParts = [
-            alternative.substring(vowelIndex),
-            alternative.substring(0, vowelIndex),
-          ];
-          console.log(alternativeParts);
-          alternativeParts[1] = alternativeParts[1] + "ej";
-          alternatives[alternativeIndex] = alternativeParts.join("ˈ");
-        }
-      });
-    });
-  }
-
-  //console.log("results", results);
 
   resultsContainer.innerHTML = "";
 
@@ -189,23 +122,9 @@ const onResultsUpdate = (fromPhonemes = false) => {
 
   clearResultContainers();
   if (results.length > 0) {
-    if (phonemeSubstitution) {
-      results.forEach((result) => {
-        result.forEach((alternative, index) => {
-          const keys = Object.keys(phonemeSubstitution);
-          const regex = new RegExp(keys.join("|"), "g");
-          alternative = alternative.replaceAll(
-            regex,
-            (match) => phonemeSubstitution[match]
-          );
-          result[index] = alternative;
-        });
-      });
-    }
-
     results.forEach((alternatives) => {
       if (alternatives.length > 0) {
-        const resultContainer = getResultContainer(alternatives);
+        getResultContainer(alternatives);
       }
     });
     if (!fromPhonemes) {
@@ -215,20 +134,9 @@ const onResultsUpdate = (fromPhonemes = false) => {
 };
 
 const phonemesInput = document.getElementById("phonemes");
-const validResultsIndices = [];
 phonemesInput.addEventListener("input", (event) => {
-  validTextSpan.innerText = "";
-  validTextStrings.length = 0;
-  validResultsIndices.length = 0;
-  const strings = event.target.value.split(" ").map((string, index) => {
-    const word =
-      TextToIPA._WordDict[
-        string.replaceAll("ˈ", "").replaceAll("ˌ", "").replaceAll(".", "")
-      ];
-    validTextStrings.push(word || string);
-    validResultsIndices[index] = Boolean(word);
-    let characters = string.split("");
-    characters = characters.filter((character) => {
+  const strings = event.target.value.split(" ").map((string) => {
+    const characters = string.split("").filter((character) => {
       if (character == "ˈ" || character == "ˌ" || character == ".") {
         return true;
       } else {
@@ -239,16 +147,6 @@ phonemesInput.addEventListener("input", (event) => {
   });
 
   validPhonemesSpan.innerHTML = "";
-  validResultsIndices.forEach((isValid, index) => {
-    const span = document.createElement("span");
-    span.innerText = validTextStrings[index];
-    if (isValid) {
-      span.classList.add("valid");
-    } else {
-      span.classList.add("invalid");
-    }
-    validPhonemesSpan.appendChild(span);
-  });
 
   results.length = 0;
   strings.forEach((string) => {
@@ -282,10 +180,6 @@ const getResultContainer = (alternatives) => {
   resultContainer.setAlternatives(alternatives);
   resultContainer.style.display = "";
 
-  const wordSpan = resultContainer.querySelector(".word");
-  wordSpan.innerText =
-    validTextStrings[resultContainer.resultContainerIndex] || "";
-
   return resultContainer;
 };
 
@@ -294,13 +188,10 @@ const createResultContainer = () => {
     .cloneNode(true)
     .querySelector(".result");
 
-  let alternatives;
   let alternative;
 
   const resultContainerIndex = resultsContainer.childElementCount;
   resultContainer.resultContainerIndex = resultContainerIndex;
-
-  const alternativesContainer = resultContainer.querySelector(".alternatives");
 
   const playButton = resultContainer.querySelector(".play");
   playButton.addEventListener("click", () => {
@@ -318,25 +209,7 @@ const createResultContainer = () => {
   });
 
   resultContainer.setAlternatives = (_alternatives) => {
-    alternatives = _alternatives;
-    alternativesContainer.innerHTML = "";
-    alternatives.forEach((alternative, index) => {
-      const alternativeContainer = alternativeTemplate.content
-        .cloneNode(true)
-        .querySelector(".alternative");
-      const alternativeSpan = alternativeContainer.querySelector("span");
-      alternativeSpan.innerText = alternative;
-      const alternativeRadio = alternativeContainer.querySelector(
-        "input[type='radio']"
-      );
-      alternativeRadio.checked = index == 0;
-      alternativeRadio.name = resultContainerIndex;
-      alternativeRadio.addEventListener("input", (event) => {
-        setAlternative(alternative);
-      });
-      setAlternative(alternatives[0]);
-      alternativesContainer.appendChild(alternativeContainer);
-    });
+    setAlternative(_alternatives[0]);
   };
 
   const phonemesContainer = resultContainer.querySelector(".phonemes");
@@ -653,37 +526,6 @@ const throttledSend = throttle((message) => {
   });
 }, 100);
 
-const phonemeSubstitutionsSelect = document.getElementById(
-  "phonemeSubstitutions"
-);
-
-for (const substitutionType in phonemeSubstitutions) {
-  const optGroup = document.createElement("optgroup");
-  optGroup.label = substitutionType;
-  const substitutionSubTypes = phonemeSubstitutions[substitutionType];
-  for (const substitutionSubType in substitutionSubTypes) {
-    const option = new Option(
-      substitutionSubType,
-      `${substitutionType}.${substitutionSubType}`
-    );
-    optGroup.appendChild(option);
-  }
-  phonemeSubstitutionsSelect.appendChild(optGroup);
-}
-
-let phonemeSubstitutionType = "none";
-let phonemeSubstitution;
-phonemeSubstitutionsSelect.addEventListener("input", (event) => {
-  phonemeSubstitutionType = event.target.value;
-  if (phonemeSubstitutionType == "none") {
-    phonemeSubstitution = null;
-  } else {
-    const [type, subType] = phonemeSubstitutionType.split(".");
-    phonemeSubstitution = phonemeSubstitutions[type][subType];
-  }
-  //console.log("phonemeSubstitution", phonemeSubstitution);
-  textInput.dispatchEvent(new Event("input"));
-});
 
 let isWhispering = false;
 const onWhisperInput = (event) => {
@@ -691,39 +533,9 @@ const onWhisperInput = (event) => {
   //console.log("isWhispering", isWhispering);
 };
 
-let numberOfRandomPhonemes = 10;
-const numberOfRandomPhonemesInput = document.getElementById(
-  "numberOfRandomPhonemes"
-);
-numberOfRandomPhonemesInput.addEventListener("input", (event) => {
-  numberOfRandomPhonemes = Number(event.target.value);
-  //console.log("numberOfRandomPhonemes", numberOfRandomPhonemes);
-});
-const generateRandomPhonemesButton = document.getElementById(
-  "generateRandomPhonemes"
-);
-generateRandomPhonemesButton.addEventListener("click", () => {
-  let netLength = 0;
-  const randomResults = [];
-  while (netLength < numberOfRandomPhonemes) {
-    const randomPhonemes = markov.generateRandom(getRandomInt(3, 6));
-    randomResults.push(randomPhonemes);
-    netLength += randomPhonemes.length;
-  }
-  phonemesInput.value = randomResults.join(" ");
-  phonemesInput.dispatchEvent(new Event("input"));
-});
 
 function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min) + min);
 }
-
-let isUsingPigLatin = false;
-const pigLatinCheckbox = document.getElementById("pigLatin");
-pigLatinCheckbox.addEventListener("input", (event) => {
-  isUsingPigLatin = event.target.checked;
-  //console.log("isUsingPigLatin", isUsingPigLatin);
-  onResultsUpdate();
-});
