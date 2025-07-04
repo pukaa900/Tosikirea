@@ -7,14 +7,14 @@
 
   <body>
     <nav>
-      <a href="../../">home</a>
+      <a href="../../">itū autu</a>
     </nav>
     <div style="position: absolute; left: 0; top: 0; z-index: 100">
       <select id="microphoneSelect" hidden>
-        <optgroup id="microphoneOptGroup" label="select microphone"></optgroup>
+        <optgroup id="microphoneOptGroup" label="filifili le masini faaleotele leo"></optgroup>
       </select>
-      <button id="toggleMicrophone">enable microphone</button>
-      <button id="debugMicrophone" hidden>listen to mirophone</button>
+      <button id="toggleMicrophone">fa'aola le masini faaleotele leo</button>
+      <button id="debugMicrophone" hidden>fa'alogo i le masini faaleotele leo</button>
     </div>
 
     <pink-trombone></pink-trombone>
@@ -69,7 +69,7 @@
         pinkTromboneElement.pinkTrombone._aspirateFilter.disconnect();
 
         debugMicrophoneButton.removeAttribute("hidden");
-        toggleMicrophoneButton.innerText = "disable microphone";
+        toggleMicrophoneButton.innerText = "fa'amuta le masini faaleotele leo";
       };
       const stopMicrophone = () => {
         if (mediaStream) {
@@ -79,7 +79,7 @@
           mediaStreamSourceNode = undefined;
           isListeningToMicrophone = false;
           debugMicrophoneButton.setAttribute("hidden", "");
-          toggleMicrophoneButton.innerText = "enable microphone";
+          toggleMicrophoneButton.innerText = "fa'aola le masini faaleotele leo";
 
           pinkTromboneElement.pinkTrombone._fricativeFilter.connect(
             pinkTromboneElement.pinkTrombone._pinkTromboneNode.noise
@@ -125,10 +125,10 @@
           isListeningToMicrophone = !isListeningToMicrophone;
           if (isListeningToMicrophone) {
             mediaStreamSourceNode.connect(audioContext.destination);
-            debugMicrophoneButton.innerText = "stop listening to microphone";
+            debugMicrophoneButton.innerText = "taofi le fa'alogo i le masini faaleotele leo";
           } else {
             mediaStreamSourceNode.disconnect(audioContext.destination);
-            debugMicrophoneButton.innerText = "listen to microphone";
+            debugMicrophoneButton.innerText = "fa'alogo i le masini faaleotele leo";
           }
         }
       });
