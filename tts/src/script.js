@@ -313,8 +313,8 @@ const createResultContainer = () => {
             "frontConstriction.diameter": 5,
             "backConstriction.diameter": 5,
           };
-// reapapan backsetting
-// Add semitone pitch if specified
+// toe seti tua
+// Fa'aopoopo le semitone pe a fa'ailoa
 if ("semitones" in phonemeInfo && !isSubPhoneme) {
   keyframe.semitones = phonemeInfo.semitones;
 }
@@ -347,7 +347,7 @@ if ("frequency" in phonemeInfo && !isSubPhoneme) {
           _keyframes.push(holdKeyframe);
 
           if (index == 0 && type == "consonant" && !voiced) {
-            // add keyframe after first to change to voiced
+            // fa'aopoopo le keyframe muamua e sui i le leo
             Object.assign(
               _keyframes[0],
               deconstructVoiceness(defaultVoiceness)
@@ -367,7 +367,7 @@ if ("frequency" in phonemeInfo && !isSubPhoneme) {
             );
             _keyframes.splice(1, 0, voicedToVoicelessKeyframe);
 
-            // add keyframe after last to change back to voiced
+            // fa'aopoopo le keyframe mulimuli e toe foi i le leo
             const voicelessToVoicedKeyframe = Object.assign(
               {},
               _keyframes[_keyframes.length - 1]
