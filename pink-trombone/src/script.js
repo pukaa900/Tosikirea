@@ -300,7 +300,7 @@ const { send } = setupConnection("pink-trombone", (message) => {
               exponentialRampToValueAtTime(backConstriction.diameter, backConstriction.diameter.maxValue);
             }
             nodes.forEach(({ node, value }) => {
-              // FIX timing
+              // fa'asa'o le taimi
               exponentialRampToValueAtTime(node, value, 0.04 + index * 0.1);
             });
           });
@@ -321,7 +321,7 @@ const { send } = setupConnection("pink-trombone", (message) => {
         }
         break;
       default:
-      //console.log("uncaught key", key);
+      //console.log("ki e le'i maua", key);
     }
 
     if (node) {
@@ -359,7 +359,7 @@ function exponentialRampToValueAtTime(node, value, offset = 0.01) {
   if (value == 0) {
     value = 0.0001;
   }
-  //node.cancelAndHoldAtTime(pinkTromboneElement.audioContext.currentTime);
+  //node.cancelAndHoldAtTime(pinkTromboneElement.audioContext.currentTime); // fa'amalū
   node.exponentialRampToValueAtTime(value, pinkTromboneElement.audioContext.currentTime + offset);
 }
 
